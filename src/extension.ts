@@ -64,14 +64,12 @@ ${componentData['usage']}
 async function updateReadme(
     readmePath: vscode.Uri,
     markdownText: string,
-    type: string,
-    name: string
+    type: string
 ): Promise<void> {
     let existingContent = await vscode.workspace.fs
         .readFile(readmePath)
         .then((bytes) => bytes.toString());
-
-    const sectionHeader =
+    let sectionHeader =
         type === 'Function' ? '# **Functions**' : '# **Components**';
     let sectionPos = existingContent.indexOf(sectionHeader);
 
@@ -79,34 +77,16 @@ async function updateReadme(
         // If the section doesn't exist, create it at the end of the file
         existingContent += `\n${sectionHeader}\n${markdownText}`;
     } else {
-        // Find existing entry for the function or component
-        const entryHeader =
-            type === 'Function' ? `### **${name}()**` : `### **${name}.jsx**`;
-        let entryStart = existingContent.indexOf(entryHeader, sectionPos);
-
-        if (entryStart !== -1) {
-            // If the entry exists, replace it
-            let entryEnd = existingContent.indexOf('\n### **', entryStart + 1);
-            if (entryEnd === -1) {
-                // Check if it's the last entry
-                entryEnd = existingContent.length;
-            }
-            existingContent =
-                existingContent.substring(0, entryStart) +
-                markdownText +
-                existingContent.substring(entryEnd);
-        } else {
-            // If the entry does not exist, append the new content after the section header
-            const newEntryPos = existingContent.indexOf(
-                '\n',
-                sectionPos + sectionHeader.length
-            );
-            existingContent =
-                existingContent.substring(0, newEntryPos) +
-                '\n' +
-                markdownText +
-                existingContent.substring(newEntryPos);
+        // If the section exists, append the new content after the section header
+        let sectionEndPos = existingContent.indexOf('\n## ', sectionPos + 1);
+        if (sectionEndPos === -1) {
+            sectionEndPos = existingContent.length;
         }
+        existingContent =
+            existingContent.slice(0, sectionEndPos) +
+            '\n' +
+            markdownText +
+            existingContent.slice(sectionEndPos);
     }
 
     await vscode.workspace.fs.writeFile(
@@ -150,7 +130,6 @@ export function activate(context: vscode.ExtensionContext) {
                     try {
                         const parsedResult = JSON.parse(finalResult);
                         const type = parsedResult['type'];
-                        const name = parsedResult['name'];
                         const markdownText = generateMarkdown(
                             type,
                             parsedResult['data']
@@ -163,7 +142,7 @@ export function activate(context: vscode.ExtensionContext) {
                                 workspaceFolders[0].uri,
                                 'README.md'
                             );
-                            updateReadme(readmePath, markdownText, type, name); // Pass 'name' to updateReadme
+                            updateReadme(readmePath, markdownText, type);
                         } else {
                             vscode.window.showInformationMessage(
                                 'No workspace is open.'
