@@ -48,7 +48,7 @@ interface FunctionsType {
     Component: FlexibleObject
 }
 
-let functions: FunctionsType = {
+let functionsData: FunctionsType = {
     Function: {},
     Component: {}
 }
@@ -98,7 +98,7 @@ ${componentData['usage']}
     return markdownText;
 }
 
-async function updateReadme(
+async function updateReadmeX(
     readmePath: vscode.Uri,
     markdownText: string,
     type: string
@@ -139,7 +139,7 @@ async function loadFunctios(filePath: vscode.Uri) {
         const filedata = await vscode.workspace.fs.readFile(filePath);
         const filedata_str = filedata.toString();
         try {
-            functions = JSON.parse(filedata.toString()) as FunctionsType;
+            functionsData = JSON.parse(filedata.toString()) as FunctionsType;
         } catch(error) {
             console.error('functions.json parse error:', error);
             vscode.window.showErrorMessage(
@@ -150,15 +150,47 @@ async function loadFunctios(filePath: vscode.Uri) {
         console.log('File does not exist, creating file...');
         await vscode.workspace.fs.writeFile(
             filePath,
-            Buffer.from('{}')
+            Buffer.from(JSON.stringify({
+                Function: {},
+                Component: {}
+            }))
         );
     }
 }
 
-async function updateFunctios(filePath: vscode.Uri) {
+async function updateFunctions(filePath: vscode.Uri) {
     await vscode.workspace.fs.writeFile(
         filePath,
-        Buffer.from(JSON.stringify(functions))
+        Buffer.from(JSON.stringify(functionsData))
+    );
+}
+
+async function updateReadme(filePath: vscode.Uri) {
+    const funcs = functionsData.Function;
+    const comps = functionsData.Component;
+    let text: String = "";
+
+    const funcsEntries = Object.entries(funcs);
+    if (funcsEntries.length > 0) {
+        text += '# **Functions**\n';
+    }
+    funcsEntries.forEach(element => {
+        const value = element[1];
+        text += generateMarkdown(CodeType.Function, value);
+    });
+    
+    const compsEntries = Object.entries(comps);
+    if (compsEntries.length > 0) {
+        text += '\n# **Components**\n';
+    }
+    Object.entries(comps).forEach(element => {
+        const value = element[1];
+        text += generateMarkdown(CodeType.Component, value);
+    });
+
+    await vscode.workspace.fs.writeFile(
+        filePath,
+        Buffer.from(text)
     );
 }
 
@@ -221,10 +253,14 @@ export function activate(context: vscode.ExtensionContext) {
                             const type = parsedResult['type'] as "Function" | "Component";
                             const data = parsedResult['data'] as ComponentData;
                             
-                            functions[type][data.name] = data;
-                            const URI = getUri('functions.json');
+                            functionsData[type][data.name] = data;
+                            let URI = getUri('functions.json');
                             if (URI) {
-                                await updateFunctios(URI);
+                                await updateFunctions(URI);
+                            }
+                            URI = getUri('README.md');
+                            if (URI) {
+                                await updateReadme(URI);
                             }
                            
                         }
