@@ -1,23 +1,60 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
-import { json } from 'stream/consumers';
-import { read } from 'fs';
+
 
 interface FunctionData {
-    type: string;
     description: string;
-    params: Record<string, string>; // Assuming params is now a dictionary
+    params: Record<string, string>;
     usage: string;
     name: string;
 }
 
 interface ComponentData {
-    type: string;
     description: string;
     props: Record<string, string>;
     usage: string;
     name: string;
 }
+
+enum Language {
+    Ro = "Ro",
+    En = "En"
+};
+  
+enum CodeType {
+    Function = "Function",
+    Component = "Component",
+    None = "None"
+};
+  
+enum ResponseStatus {
+    Success = "Success",
+    Error = "Error"
+};
+
+interface APIResponse {
+    type: CodeType,
+    status: ResponseStatus,
+    data?: String,
+    info?: String
+};
+
+interface FlexibleObject {
+    [key: string]: any;
+}
+
+interface FunctionsType {
+    Function: FlexibleObject,
+    Component: FlexibleObject
+}
+
+let functions: FunctionsType = {
+    Function: {},
+    Component: {}
+}
+
+
+
 
 function generateMarkdown(
     type: string,
@@ -26,7 +63,7 @@ function generateMarkdown(
     let markdownText = '';
     if (type === 'Function') {
         const functionData = data as FunctionData;
-        console.log(functionData);
+        // console.log(functionData);
         markdownText = `
 ### **${functionData['name']}()**
 
@@ -96,8 +133,55 @@ async function updateReadme(
     vscode.window.showInformationMessage('Documentation updated in README.md');
 }
 
+async function loadFunctios(filePath: vscode.Uri) {
+    try {
+        console.log('File exists.');
+        const filedata = await vscode.workspace.fs.readFile(filePath);
+        const filedata_str = filedata.toString();
+        try {
+            functions = JSON.parse(filedata.toString()) as FunctionsType;
+        } catch(error) {
+            console.error('functions.json parse error:', error);
+            vscode.window.showErrorMessage(
+                'functions.json parse error'
+            );
+        }
+    } catch (error) {
+        console.log('File does not exist, creating file...');
+        await vscode.workspace.fs.writeFile(
+            filePath,
+            Buffer.from('{}')
+        );
+    }
+}
+
+async function updateFunctios(filePath: vscode.Uri) {
+    await vscode.workspace.fs.writeFile(
+        filePath,
+        Buffer.from(JSON.stringify(functions))
+    );
+}
+
+function getUri(filename: string): vscode.Uri | undefined {
+    if (vscode.workspace.workspaceFolders) {
+        return vscode.Uri.joinPath(
+            vscode.workspace.workspaceFolders[0].uri,
+            filename
+        );
+    } else {
+        vscode.window.showInformationMessage(
+            'No workspace is open.'
+        );
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('Congratulations, your extension "codedocs" is now active!');
+    const URI = getUri('functions.json');
+    if (URI) {
+        loadFunctios(URI);
+    }
+    
     let disposable = vscode.commands.registerCommand(
         'codedocs.helloWorld',
         async () => {
@@ -113,43 +197,43 @@ export function activate(context: vscode.ExtensionContext) {
 
                 // Make a request to the backend
                 const formattedText = text.replace(/\r?\n|\r/g, ' ').trim();
-
                 try {
                     const response = await axios.post(
                         'https://wpoeml43owuky4yqiu62iw2jwq0rckaj.lambda-url.us-east-1.on.aws/',
                         {
                             jsonrpc: '2.0',
                             method: 'Server.generateDoc',
-                            params: ['En', `"${formattedText}"`],
+                            params: [Language.En, `"${formattedText}"`],
                             id: 3,
                         }
                     );
 
-                    const finalResult = response.data.result;
-
                     try {
-                        const parsedResult = JSON.parse(finalResult);
-                        const type = parsedResult['type'];
-                        const markdownText = generateMarkdown(
-                            type,
-                            parsedResult['data']
-                        );
-
-                        const workspaceFolders =
-                            vscode.workspace.workspaceFolders;
-                        if (workspaceFolders) {
-                            const readmePath = vscode.Uri.joinPath(
-                                workspaceFolders[0].uri,
-                                'README.md'
+                        const parsedResult = JSON.parse(response.data.result);
+                        const status = parsedResult['status'] as ResponseStatus;
+                        if (status == ResponseStatus.Error) {
+                            console.log("Response status: " + status)
+                            vscode.window.showErrorMessage(
+                                'Response status: ' + 
+                                parsedResult['info']
                             );
-                            updateReadme(readmePath, markdownText, type);
-                        } else {
-                            vscode.window.showInformationMessage(
-                                'No workspace is open.'
-                            );
+                        } else if (status == ResponseStatus.Success) {
+                            const type = parsedResult['type'] as "Function" | "Component";
+                            const data = parsedResult['data'] as ComponentData;
+                            
+                            functions[type][data.name] = data;
+                            const URI = getUri('functions.json');
+                            if (URI) {
+                                await updateFunctios(URI);
+                            }
+                           
                         }
+                        
                     } catch (error) {
                         console.error('Parsing error:', error);
+                        vscode.window.showErrorMessage(
+                            'Parsing error'
+                        );
                     }
                 } catch (error) {
                     console.error('HTTP request failed:', error);
