@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
 
-
 interface FunctionData {
     description: string;
     params: Record<string, string>;
@@ -17,44 +16,41 @@ interface ComponentData {
 }
 
 enum Language {
-    Ro = "Ro",
-    En = "En"
-};
-  
+    Ro = 'Ro',
+    En = 'En',
+}
+
 enum CodeType {
-    Function = "Function",
-    Component = "Component",
-    None = "None"
-};
-  
+    Function = 'Function',
+    Component = 'Component',
+    None = 'None',
+}
+
 enum ResponseStatus {
-    Success = "Success",
-    Error = "Error"
-};
+    Success = 'Success',
+    Error = 'Error',
+}
 
 interface APIResponse {
-    type: CodeType,
-    status: ResponseStatus,
-    data?: String,
-    info?: String
-};
+    type: CodeType;
+    status: ResponseStatus;
+    data?: String;
+    info?: String;
+}
 
 interface FlexibleObject {
     [key: string]: any;
 }
 
 interface FunctionsType {
-    Function: FlexibleObject,
-    Component: FlexibleObject
+    Function: FlexibleObject;
+    Component: FlexibleObject;
 }
 
 let functionsData: FunctionsType = {
     Function: {},
-    Component: {}
-}
-
-
-
+    Component: {},
+};
 
 function generateMarkdown(
     type: string,
@@ -98,41 +94,6 @@ ${componentData['usage']}
     return markdownText;
 }
 
-async function updateReadmeX(
-    readmePath: vscode.Uri,
-    markdownText: string,
-    type: string
-): Promise<void> {
-    let existingContent = await vscode.workspace.fs
-        .readFile(readmePath)
-        .then((bytes) => bytes.toString());
-    let sectionHeader =
-        type === 'Function' ? '# **Functions**' : '# **Components**';
-    let sectionPos = existingContent.indexOf(sectionHeader);
-
-    if (sectionPos === -1) {
-        // If the section doesn't exist, create it at the end of the file
-        existingContent += `\n${sectionHeader}\n${markdownText}`;
-    } else {
-        // If the section exists, append the new content after the section header
-        let sectionEndPos = existingContent.indexOf('\n## ', sectionPos + 1);
-        if (sectionEndPos === -1) {
-            sectionEndPos = existingContent.length;
-        }
-        existingContent =
-            existingContent.slice(0, sectionEndPos) +
-            '\n' +
-            markdownText +
-            existingContent.slice(sectionEndPos);
-    }
-
-    await vscode.workspace.fs.writeFile(
-        readmePath,
-        Buffer.from(existingContent)
-    );
-    vscode.window.showInformationMessage('Documentation updated in README.md');
-}
-
 async function loadFunctios(filePath: vscode.Uri) {
     try {
         console.log('File exists.');
@@ -140,20 +101,20 @@ async function loadFunctios(filePath: vscode.Uri) {
         const filedata_str = filedata.toString();
         try {
             functionsData = JSON.parse(filedata.toString()) as FunctionsType;
-        } catch(error) {
+        } catch (error) {
             console.error('functions.json parse error:', error);
-            vscode.window.showErrorMessage(
-                'functions.json parse error'
-            );
+            vscode.window.showErrorMessage('functions.json parse error');
         }
     } catch (error) {
         console.log('File does not exist, creating file...');
         await vscode.workspace.fs.writeFile(
             filePath,
-            Buffer.from(JSON.stringify({
-                Function: {},
-                Component: {}
-            }))
+            Buffer.from(
+                JSON.stringify({
+                    Function: {},
+                    Component: {},
+                })
+            )
         );
     }
 }
@@ -168,30 +129,27 @@ async function updateFunctions(filePath: vscode.Uri) {
 async function updateReadme(filePath: vscode.Uri) {
     const funcs = functionsData.Function;
     const comps = functionsData.Component;
-    let text: String = "";
+    let text: String = '';
 
     const funcsEntries = Object.entries(funcs);
     if (funcsEntries.length > 0) {
         text += '# **Functions**\n';
     }
-    funcsEntries.forEach(element => {
+    funcsEntries.forEach((element) => {
         const value = element[1];
         text += generateMarkdown(CodeType.Function, value);
     });
-    
+
     const compsEntries = Object.entries(comps);
     if (compsEntries.length > 0) {
         text += '\n# **Components**\n';
     }
-    Object.entries(comps).forEach(element => {
+    Object.entries(comps).forEach((element) => {
         const value = element[1];
         text += generateMarkdown(CodeType.Component, value);
     });
 
-    await vscode.workspace.fs.writeFile(
-        filePath,
-        Buffer.from(text)
-    );
+    await vscode.workspace.fs.writeFile(filePath, Buffer.from(text));
 }
 
 function getUri(filename: string): vscode.Uri | undefined {
@@ -201,9 +159,31 @@ function getUri(filename: string): vscode.Uri | undefined {
             filename
         );
     } else {
-        vscode.window.showInformationMessage(
-            'No workspace is open.'
+        vscode.window.showInformationMessage('No workspace is open.');
+    }
+}
+
+class DocsCodeActionProvider implements vscode.CodeActionProvider {
+    public provideCodeActions(
+        document: vscode.TextDocument,
+        range: vscode.Range
+    ): vscode.CodeAction[] | undefined {
+        const selectedText = document.getText(range);
+
+        if (!selectedText.trim()) {
+            return;
+        }
+
+        const generateDocsAction = new vscode.CodeAction(
+            'Generate documentation fix',
+            vscode.CodeActionKind.QuickFix
         );
+        generateDocsAction.command = {
+            title: 'Generate documentation fix',
+            command: 'codedocs.generateDocumentation',
+            arguments: [selectedText, range],
+        };
+        return [generateDocsAction];
     }
 }
 
@@ -213,14 +193,29 @@ export function activate(context: vscode.ExtensionContext) {
     if (URI) {
         loadFunctios(URI);
     }
-    
+
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            'javascript',
+            new DocsCodeActionProvider()
+        )
+    );
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            'typescript',
+            new DocsCodeActionProvider()
+        )
+    );
+
     let disposable = vscode.commands.registerCommand(
-        'codedocs.helloWorld',
-        async () => {
+        'codedocs.generateDocumentation',
+        async (selectedText?: string, range?: vscode.Range) => {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const selection = editor.selection;
-                const text = editor.document.getText(selection);
+                const text = selectedText
+                    ? selectedText
+                    : editor.document.getText(selection);
 
                 if (!text) {
                     vscode.window.showInformationMessage('No text selected.');
@@ -242,17 +237,19 @@ export function activate(context: vscode.ExtensionContext) {
 
                     try {
                         const parsedResult = JSON.parse(response.data.result);
+                        console.log('Parsed result:', parsedResult);
                         const status = parsedResult['status'] as ResponseStatus;
                         if (status == ResponseStatus.Error) {
-                            console.log("Response status: " + status)
+                            console.log('Response status: ' + status);
                             vscode.window.showErrorMessage(
-                                'Response status: ' + 
-                                parsedResult['info']
+                                'Response status: ' + parsedResult['info']
                             );
                         } else if (status == ResponseStatus.Success) {
-                            const type = parsedResult['type'] as "Function" | "Component";
+                            const type = parsedResult['type'] as
+                                | 'Function'
+                                | 'Component';
                             const data = parsedResult['data'] as ComponentData;
-                            
+
                             functionsData[type][data.name] = data;
                             let URI = getUri('functions.json');
                             if (URI) {
@@ -262,14 +259,10 @@ export function activate(context: vscode.ExtensionContext) {
                             if (URI) {
                                 await updateReadme(URI);
                             }
-                           
                         }
-                        
                     } catch (error) {
                         console.error('Parsing error:', error);
-                        vscode.window.showErrorMessage(
-                            'Parsing error'
-                        );
+                        vscode.window.showErrorMessage('Parsing error');
                     }
                 } catch (error) {
                     console.error('HTTP request failed:', error);
