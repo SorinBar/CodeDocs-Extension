@@ -1,36 +1,36 @@
 # **Functions**
 
+### **generateUniqueId()**
+
+<u>**Description:**</u>
+This function generates a unique ID by querying the database for the maximum existing ID, then incrementing it by 1. If no IDs exist yet, it returns 0 as the initial ID.
+
+<u>**Parameters:**</u>
+
+
+<u>**Usage:**</u>
+To generate a unique ID, call the function generateUniqueId() which returns a Promise<number>. You can await the result to get the unique ID.
+
 ### **getUri()**
 
 <u>**Description:**</u>
-Aceasta functie returneaza URI-ul asociat unui fisier din primul folder al workspace-ului curent. Daca nu exista niciun workspace deschis, se afiseaza un mesaj informativ.
+This function generates a URI for a given filename within the first workspace folder of the VS Code workspace. If there are no workspace folders open, it shows an information message indicating that no workspace is open.
 
 <u>**Parameters:**</u>
-- **filename**: numele fisierului pentru care se doreste obtinerea URI-ului
+- **filename**: The name of the file to create the URI for
 
 <u>**Usage:**</u>
-Pentru a folosi aceasta functie, trebuie sa ii furnizati numele fisierului pentru care doriti sa obtineti URI-ul. Functia va returna URI-ul daca exista un workspace deschis sau va afisa un mesaj informativ in caz contrar.
-
-### **deleteUser()**
-
-<u>**Description:**</u>
-Aceasta functie verifica daca exista un utilizator cu adresa de email specificata si, in caz afirmativ, il sterge din baza de date. Daca utilizatorul nu exista, se va returna un mesaj de eroare.
-
-<u>**Parameters:**</u>
-- **email**: Adresa de email a utilizatorului care urmeaza sa fie sters
-
-<u>**Usage:**</u>
-Pentru a utiliza aceasta functie, trebuie sa ii furnizati adresa de email a utilizatorului pe care doriti sa il stergeti. Functia va returna un obiect de tip UserResponse care indica daca stergerea a avut succes sau a intampinat o eroare.
+To use the getUri function, provide the filename as a parameter and it will return the corresponding vscode.Uri object for that file. If a workspace is open, it will generate the URI within the workspace folder. If no workspace is open, it will display an information message.
 
 # **Components**
 
-### **EditUser**
+### **AddUser**
 
 <u>**Description:**</u>
-A React component that allows editing user details in a user management system.
+Aceasta componenta reprezinta o interfata de adaugare a unui utilizator intr-un sistem de management al utilizatorilor. Utilizatorul poate introduce numele, adresa de email si selecta daca este verificat sau nu. Cand utilizatorul apasa pe butonul de 'Add user', se apeleaza functia 'handleSubmit' care valideaza datele introduse si adauga utilizatorul. Daca sunt erori in validare sau la adaugarea utilizatorului, acestea sunt afisate utilizatorului.
 
 <u>**Props:**</u>
 
 
 <u>**Usage:**</u>
-To use the EditUser component, simply integrate it into your React application, ensuring that the necessary dependencies such as 'useNavigate', 'useParams', 'useState', and 'useEffect' are imported. The component can then be rendered on a route where user details need to be edited. When the component is accessed, it fetches user data based on the provided email parameter and allows the user to update the name and verification status. Upon submitting the form, the user details are updated via UserHandler.updateUser and success/error messages are displayed accordingly.
+Pentru a utiliza componenta 'AddUser', o poti integra in alt componenta sau ruta dintr-o aplicatie React care necesita functionalitatea de adaugare a unui utilizator. Poti apela aceasta componenta prin simpla afisare a tag-ului '<AddUser />' in interiorul unei alte componente sau rute.

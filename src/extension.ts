@@ -150,7 +150,6 @@ async function updateReadme(filePath: vscode.Uri) {
         const value = element[1];
         text += generateMarkdown(CodeType.Component, value);
     });
-
     await vscode.workspace.fs.writeFile(filePath, Buffer.from(text));
 }
 
@@ -270,24 +269,25 @@ export function activate(context: vscode.ExtensionContext) {
                                 'Response status: ' + parsedResult['info']
                             );
                         } else if (status == ResponseStatus.Success) {
-                            const type = parsedResult['type'] as
-                                | 'Function'
-                                | 'Component';
+                            const type = parsedResult['type'] as 'Function' | 'Component';
                             const data = parsedResult['data'] as ComponentData;
+
 
                             functionsData[type][data.name] = data;
                             let URI = getUri('functions.json');
                             if (URI) {
                                 await updateFunctions(URI);
                             }
+                            console.log("HERE");
+
                             URI = getUri('README.md');
                             if (URI) {
                                 await updateReadme(URI);
                             }
                         }
                     } catch (error) {
-                        console.error('Parsing error:', error);
-                        vscode.window.showErrorMessage('Parsing error');
+                        console.error('Parsing error response:', error);
+                        vscode.window.showErrorMessage('Parsing error response');
                     }
                 } catch (error) {
                     console.error('HTTP request failed:', error);

@@ -257,3 +257,17 @@ export class UserHandler {
     }
   }
 }
+
+function sortObjects(arr: MyObject[]): MyObject[] {
+  return arr.sort((a, b) => {
+      // First, sort by priority in descending order
+      if (a.priority > b.priority) return -1;
+      if (a.priority < b.priority) return 1;
+
+      // If priority is the same, sort by name in ascending order
+      if (a.name < b.name) return -1;
+      if (a.name > b.name) return 1;
+
+      return 0; // If both priority and name are the same
+  });
+}

@@ -21,6 +21,14 @@
                 "command": "codedocs.generateDocumentation",
                 "title": "Generate documentation"
             }
+        ],
+        "keybindings": [
+            {
+                "command": "codedocs.generateDocumentation",
+                "key": "ctrl+shift+e",
+                "mac": "cmd+shift+e",
+                "when": "editorTextFocus"
+            }
         ]
     },
     "scripts": {
