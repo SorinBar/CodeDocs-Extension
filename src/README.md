@@ -1,58 +1,36 @@
 # **Functions**
 
-### **updateFunctions()**
+### **getUri()**
 
 <u>**Description:**</u>
-This function updates the functions data in the specified file by writing the functionsData as a JSON string.
+Aceasta functie returneaza URI-ul asociat unui fisier din primul folder al workspace-ului curent. Daca nu exista niciun workspace deschis, se afiseaza un mesaj informativ.
 
 <u>**Parameters:**</u>
-- **filePath**: The path of the file where the functions data will be updated
+- **filename**: numele fisierului pentru care se doreste obtinerea URI-ului
 
 <u>**Usage:**</u>
-To update functions data in a file, call updateFunctions with the file path as an argument.
+Pentru a folosi aceasta functie, trebuie sa ii furnizati numele fisierului pentru care doriti sa obtineti URI-ul. Functia va returna URI-ul daca exista un workspace deschis sau va afisa un mesaj informativ in caz contrar.
 
-### **EditUser()**
+### **deleteUser()**
 
 <u>**Description:**</u>
-Function to edit user details such as name and verification status. It retrieves user details based on the provided email, allows editing, and updates the user information. Displays an edit form with input fields for name and verified status along with error handling.
+Aceasta functie verifica daca exista un utilizator cu adresa de email specificata si, in caz afirmativ, il sterge din baza de date. Daca utilizatorul nu exista, se va returna un mesaj de eroare.
 
 <u>**Parameters:**</u>
-- **email**: The email of the user to be retrieved or updated
+- **email**: Adresa de email a utilizatorului care urmeaza sa fie sters
 
 <u>**Usage:**</u>
-To utilize the EditUser function, you need to provide the user's email as a parameter. The function will fetch the user details and populate the edit form with the current information. After making the necessary changes, click on the 'Edit user' button to update the user details. Any errors in the form will be displayed to the user.
-
-### **updateReadme()**
-
-<u>**Description:**</u>
-This async function updates a readme file with the content of functions and components data provided. It generates markdown for each function and component and writes the updated content to the specified file path.
-
-<u>**Parameters:**</u>
-- **filePath**: A vscode.Uri representing the file path where the updated readme should be saved
-
-<u>**Usage:**</u>
-To update a readme file with functions and components data, call this function with the file path where the updated readme should be saved using a vscode.Uri as the parameter.
+Pentru a utiliza aceasta functie, trebuie sa ii furnizati adresa de email a utilizatorului pe care doriti sa il stergeti. Functia va returna un obiect de tip UserResponse care indica daca stergerea a avut succes sau a intampinat o eroare.
 
 # **Components**
 
-### **EditUser.jsx**
+### **EditUser**
 
 <u>**Description:**</u>
-A React component for editing user details. It allows users to modify the name and verification status of a user.
+A React component that allows editing user details in a user management system.
 
 <u>**Props:**</u>
 
 
 <u>**Usage:**</u>
-To use the EditUser component, include it in your React application. The component fetches the user details based on the provided email parameter and allows the user to update the name and verification status. Upon successful update, a confirmation alert is displayed, and the user is navigated back to the dashboard. Make sure to handle any errors and loading states accordingly.
-
-### **Dashboard.jsx**
-
-<u>**Description:**</u>
-The Dashboard component is a functional component that shows a management system for users. It allows users to view all existing users, edit user details, and delete users.
-
-<u>**Props:**</u>
-
-
-<u>**Usage:**</u>
-To use the Dashboard component, simply render it in your main application file or any other component where user management is required. Ensure you have the necessary UserHandler functions available to interact with the backend for user data.
+To use the EditUser component, simply integrate it into your React application, ensuring that the necessary dependencies such as 'useNavigate', 'useParams', 'useState', and 'useEffect' are imported. The component can then be rendered on a route where user details need to be edited. When the component is accessed, it fetches user data based on the provided email parameter and allows the user to update the name and verification status. Upon submitting the form, the user details are updated via UserHandler.updateUser and success/error messages are displayed accordingly.

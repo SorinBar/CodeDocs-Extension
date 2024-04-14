@@ -52,6 +52,8 @@ let functionsData: FunctionsType = {
     Component: {},
 };
 
+let languageData: Language = Language.En;
+
 function generateMarkdown(
     type: string,
     data: FunctionData | ComponentData
@@ -77,7 +79,7 @@ ${functionData['usage']}
     } else if (type === 'Component') {
         const componentData = data as ComponentData;
         markdownText = `
-### **${componentData['name']}.jsx**
+### **${componentData['name']}**
 
 <u>**Description:**</u>
 ${componentData['description']}
@@ -175,7 +177,7 @@ class DocsCodeActionProvider implements vscode.CodeActionProvider {
         }
 
         const generateDocsAction = new vscode.CodeAction(
-            'Generate documentation fix',
+            'Generate documentation',
             vscode.CodeActionKind.QuickFix
         );
         generateDocsAction.command = {
@@ -183,7 +185,26 @@ class DocsCodeActionProvider implements vscode.CodeActionProvider {
             command: 'codedocs.generateDocumentation',
             arguments: [selectedText, range],
         };
-        return [generateDocsAction];
+        const changeLangRoAction = new vscode.CodeAction(
+            'Set documentation Ro',
+            vscode.CodeActionKind.Notebook
+        );
+        changeLangRoAction.command = {
+            title: 'Set documentation Ro',
+            command: 'codedocs.generateDocumentation',
+            arguments: [selectedText, range, Language.Ro],
+        };
+        const changeLangEnAction = new vscode.CodeAction(
+            'Set documentation En',
+            vscode.CodeActionKind.Notebook
+        );
+        changeLangEnAction.command = {
+            title: 'Set documentation En',
+            command: 'codedocs.generateDocumentation',
+            arguments: [selectedText, range, Language.En],
+        };
+
+        return [generateDocsAction, changeLangRoAction, changeLangEnAction];
     }
 }
 
@@ -209,7 +230,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     let disposable = vscode.commands.registerCommand(
         'codedocs.generateDocumentation',
-        async (selectedText?: string, range?: vscode.Range) => {
+        async (selectedText?: string,range?: vscode.Range, lang?: Language) => {
+            if (lang) {
+                languageData = lang;
+                return;
+            }
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const selection = editor.selection;
@@ -230,7 +255,7 @@ export function activate(context: vscode.ExtensionContext) {
                         {
                             jsonrpc: '2.0',
                             method: 'Server.generateDoc',
-                            params: [Language.En, `"${formattedText}"`],
+                            params: [languageData, `"${formattedText}"`],
                             id: 3,
                         }
                     );
